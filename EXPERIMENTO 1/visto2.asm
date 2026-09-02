@@ -1,3 +1,7 @@
+     ;Escreva a sub-rotina EXTREMOS, que recebe em R12 o endereço de um vetor de
+;words (que devem ser interpretadas como números com sinal) e em R13 a quantidade
+;de elementos do vetor. A sub-rotina deve retornar em R12 o menor elemento do vetor e
+;em R13 o maior elemento do vetor.
      .cdecls   "msp430.h"
      .global main
      .text
@@ -5,57 +9,53 @@
 main:
      mov.w     #(WDTPW|WDTHOLD), &WDTCTL
 
-     mov.w     #vetor,   R12
-     mov.b     #N,   R13
+     mov.w     #vetor,   R12  ;move o vetor R12
+     mov.w     #5,   R13 ;move n para R13
 
-     call extremos
+     call		#extremos
 
-fim:
+fim:                     ;loop infinito
      jmp       $
      nop
 
 extremos:
-     push      R4
-     mov.b     #0,  R4
+     push      R4   ;variavel temporaria
+     push      R5   ;variavel maior
+     push      R6   ;variavel menor
+     clr       R5
+     clr       R6
 
-     tst       R13
-     jz        fim_loop
+     tst     R13
+     jz      fim_extremos
 
-     mov.w     @R12+, R14 ; R14 menor
-     mov.w     R14, R15 ; R15 maior
+     mov.w     @R12,     R5
+     mov.w     @R12,     R6
 
-     dec       R13
+loop_extremos:
+     mov.w     @R12+,   R4
+     cmp.w     R6,      R4     ; R4 >= R6 ?
+     jge       testa_maior     ;se R4 é maior
+ 
+     mov.w     R4,      R6 ;Se R4 e menor que R6
 
-loop:
-     tst       R13
-     jz        fim_loop
+testa_maior: ;ve se é maior ou igual
+     cmp.w     R5, R4     ; Compara R4 com R5
+     jl        proximo    ; Se R4 < R5, não é maior. Vai para o próximo elemento.
+     mov.w     R4, R5     ; Se R4 >= R5, atualiza o maior elemento em R5
 
-     mov.w     @R12+, R4
+proximo:
+     dec.w       R13
+     jnz       loop_extremos
 
-     cmp.w     R14, R4   
-     jl        min
+fim_extremos:
+     mov.w     R6,  R12
+     mov.w     R5,  R13
 
-     cmp.w     R4,  R15
-     jl        max
-
-     dec       R13
-     jmp       loop
-min:
-     mov.w     R4, R14
-     dec       R13
-     jmp       loop
-
-max:
-     mov.w     R4, R15
-     dec       R13
-     jmp       loop
-     
-fim_loop:
-     mov.w     R14, R12
-     mov.w     R15, R13
+     pop       R6
+     pop       R5
      pop       R4
-     ret
 
-     .data
-vetor:    .word     -1, 0, 1, 2, 5
-N:   .set     5
+     ret     
+     
+     .data     ;memoria
+vetor:    .word     1, -1, 5, 3, -2  ;vetor
